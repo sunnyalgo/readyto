@@ -61,6 +61,13 @@ export interface ProductWriteType {
   dateOfTesting: number;
   finalLocation: string;
 }
+export interface OrganizationWriteType {
+  name: string,
+}
+export interface SupplierWriteType {
+  name: string,
+}
+
 
 export interface selectOptionType {
   value: number,

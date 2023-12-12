@@ -3,6 +3,7 @@ import { Field, Form } from "react-final-form"
 import { toast } from "react-toastify"
 import { useContractWrite } from "wagmi";
 
+
 import { ModalWrapper, Toast } from "components"
 import { currentTime, contract_address } from "utilities"
 import { abi as ContractABI } from "contracts";
@@ -14,40 +15,29 @@ const AddSupplierModal: FC<AddSupplierModalProps> = ({ isOpen, closeModalHandler
     { name: 'name', label: 'Name', type: 'text', required: true },
   ];
 
-  const [formData, setFormData] = useState('');
-
-  const { isSuccess, write } = useContractWrite({
+  
+  const { writeAsync } = useContractWrite({
     address: contract_address,
     abi: ContractABI,
     functionName: 'addSupplierByOwner',
-    args: [
-      formData,
-    ],
-    onSuccess(data) {
+    onSuccess() {
       toast.success(
         <Toast timestamp={timestamp}>
           <span>New Supplier added successfully</span>
         </Toast>,
       )
-      console.log("success : ",data);
+      
     },
     onError(error) {
-      toast.error(
-        <Toast timestamp={timestamp}>
-          <span>You are not owner of this contract.</span>
-        </Toast>,
-      )
-      console.log("Error : ",error);
+      alert(error);
+      
     }
   })
 
-  function onAddSupplier() {
-    write();
-  }
-
   const handleSubmit = (values : {name : string}) => {
-    setFormData(values.name);
-    onAddSupplier();
+    writeAsync({
+      args:[values.name]
+    })
     closeModalHandler()
   }
 

@@ -1,4 +1,4 @@
-import { type FC, useState} from 'react'
+import { type FC} from 'react'
 import {ThemeProvider as NextThemesProvider} from "next-themes";
 
 import { Header } from './Header'

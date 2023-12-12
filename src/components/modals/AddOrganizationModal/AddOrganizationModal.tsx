@@ -1,10 +1,11 @@
-import { type FC, useState } from "react"
+import { type FC } from "react"
 import { Field, Form } from "react-final-form"
 import { toast } from "react-toastify"
 import { useContractWrite } from "wagmi";
 
+
 import { ModalWrapper, Toast } from "components"
-import { currentTime, contract_address } from "utilities"
+import { currentTime, contract_address, } from 'utilities';
 import { abi as ContractABI } from "contracts";
 import { AddOrganizationModalProps } from "./AddOrganizationModal.types"
 
@@ -13,41 +14,31 @@ const AddOrganizationModal: FC<AddOrganizationModalProps> = ({ isOpen, closeModa
   const formFields = [
     { name: 'name', label: 'Name', type: 'text', required: true },
   ];
+  
 
-  const [formData, setFormData] = useState('');
-
-  const { isSuccess, write } = useContractWrite({
+  const { writeAsync } = useContractWrite({
     address: contract_address,
     abi: ContractABI,
     functionName: 'addOrganizationByOwner',
-    args: [
-      formData,
-    ],
-    onSuccess(data) {
+    onSuccess() {
+      
       toast.success(
         <Toast timestamp={timestamp}>
           <span>New Organization added successfully</span>
         </Toast>,
       )
-      console.log("success : ",data);
     },
     onError(error) {
-      toast.error(
-        <Toast timestamp={timestamp}>
-          <span>You are not owner of this contract.</span>
-        </Toast>,
-      )
-      console.log("Error : ",error);
+      
+      alert(error)
     }
   })
 
-  function onAddOrganization() {
-    write();
-  }
-
   const handleSubmit = (values : {name : string}) => {
-    setFormData(values.name);
-    onAddOrganization();
+    writeAsync({
+      args: [values.name]
+    });
+
     closeModalHandler()
   }
 
@@ -63,7 +54,7 @@ const AddOrganizationModal: FC<AddOrganizationModalProps> = ({ isOpen, closeModa
                 <div key={field.name} className="AddProductModal__Info--item">
                   <label htmlFor={field.name} className="w-2/5 font-semibold mr-5">{field.label}:</label>
                   <Field 
-                    className="border"
+                    className="border dark:border-gray-900"
                     name={field.name}
                     component="input"
                     type={field.type}

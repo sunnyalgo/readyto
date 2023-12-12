@@ -1,10 +1,11 @@
-import { useState } from "react"
-import { useContractRead, useContractWrite } from "wagmi";
+import { useState, useEffect } from "react"
+import { useContractRead, useContractWrite, useAccount } from "wagmi";
 import { createColumnHelper } from "@tanstack/react-table"
 import { toast } from "react-toastify";
+
+
 import { ModalWrapper, Toast } from "components";
 import { currentTime } from 'utilities';
-
 import { IngredientType, contract_address } from "utilities"
 import { abi as ContractABI } from "contracts"
 import { Table, AddIngredientModal } from "components"
@@ -12,8 +13,14 @@ import { Table, AddIngredientModal } from "components"
 const Ingredients = () => {
   const columnHelper = createColumnHelper<IngredientType>()
   const [ modalOpen, setModalOpen ] = useState(false)
-  const [ removeItemId, setRemoveItemId ] = useState<number>(0);
-
+  const [ contractData, setContractData ] = useState<Array<IngredientType>>();
+  const { address } = useAccount();
+  const { data } = useContractRead({
+    address: contract_address,
+    abi: ContractABI,
+watch: true,
+    functionName: "getIngredients",
+  });
   const clientColumns = [
     columnHelper.accessor("id", {
       header: "Item ID",
@@ -78,22 +85,21 @@ const Ingredients = () => {
     })
   ]
 
-  const { data } = useContractRead({
-    address: contract_address,
-    abi: ContractABI,
-    functionName: "getIngredients",
-  });
+  const timestamp = currentTime()
   
-  const { write } = useContractWrite({
+  const { writeAsync } = useContractWrite({
     address: contract_address,
     abi: ContractABI,
     functionName: "removeIngredientByOwner",
-    args: [BigInt(removeItemId)],
     onSuccess: ()=>{
-      console.log("successfully removed!");
+      toast.success(
+        <Toast timestamp={timestamp}>
+          <span>Successfully removed</span>
+        </Toast>,
+      )
     },
     onError: (error) => {
-      console.log("Error : ",error);
+      alert(error)
     }
   })
 
@@ -111,28 +117,35 @@ const Ingredients = () => {
     }))
   }
 
+  function reloadData()
+  {
+    setContractData(covertDataToIngredientType(data as Array<IngredientType>));
+  }
+
   function addNewIngredient() {
     setModalOpen(true);
   }
 
   function removeIngredient( id:number ) {
-    setRemoveItemId(id);
-    write();
+    writeAsync({
+      args: [BigInt(id)]
+    });
   }
+
+  useEffect(()=>{
+    reloadData()
+  },[data])
 
   return (
     <div className="p-6 bg-gray-50 text-medium text-gray-500 dark:text-gray-400 dark:bg-gray-800 rounded-lg w-full mt-4">
       <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">Ingredients Tab</h3>
-      <p className="mb-2">This is some placeholder content the Profile tab's associated content, clicking another tab will toggle the visibility of this one for the next.</p>
       <div className="relative overflow-x-auto shadow-md sm:rounded-lg">
         <div className="flex justify-end mb-4">
-          <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onClick={()=>addNewIngredient()}>
-            New Ingredient
-          </button>
+          <button className="bg-green-500 hover:bg-green-700 text-white font-bold py-2 px-4 rounded" onClick={()=>addNewIngredient()}>New Ingredient</button>
         </div>
 
-        {data 
-        ? <Table columns={clientColumns} data={covertDataToIngredientType(data as Array<IngredientType>)} />
+        {contractData 
+        ? <Table columns={clientColumns} data={contractData} />
         : <Table columns={clientColumns} data={[]} />
         }
         <AddIngredientModal isOpen={modalOpen} closeModalHandler={()=>setModalOpen(false)}/>
